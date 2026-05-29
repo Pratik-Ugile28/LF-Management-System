@@ -17,8 +17,8 @@ Welcome to the **LF Project** – a full-fledged, dynamic **social media platfor
 - 🧠 Node.js + Express  
 - 🗄️ MongoDB with Mongoose  
 - 🛡️ Passport.js + JWT Auth  
-- ☁️ Cloudinery (via multer-s3)  
-- 📬 Mailgun for Email Service  
+- ☁️ AWS S3 file uploads (via multer-s3)  
+- 📬 Mailgun / SMTP email service  
 - 🍪 cookie-session + CORS  
 
 ---
@@ -27,7 +27,7 @@ Welcome to the **LF Project** – a full-fledged, dynamic **social media platfor
 
 - 🔐 **Secure JWT Authentication** (Login & Registration)  
 - 🗃️ **Category Management API**  
-- 📸 **Image Upload to Cloudinery**  
+- 📸 **Image Upload to AWS S3**  
 - 🌐 **Fully Responsive UI**  
 - 🧼 **Clean Code & Organized Structure**  
 - 🛎️ **Toast Notifications** for Real-time Feedback  
@@ -66,8 +66,8 @@ cd LF-project
 ```bash
 cd lfs-backend-server-master
 npm install
-cp .env.example .env
-add your JWT_SECRET, MONGODB_URI, Cloudinery & MAILGUN Credentials
+copy .env.example .env
+# Edit .env and set your JWT_SECRET, MONGODB_URI, AWS S3 & Mailgun/SMTP credentials
 npm start
 ```
 
@@ -106,11 +106,20 @@ npm test
 |----------|-------------|
 | `JWT_SECRET` | Secret for JWT |
 | `MONGODB_URI` | MongoDB connection string |
-| `Cloudinery_ACCESS_KEY_ID` | Cloudinery Access Key |
-| `Cloudinery_ACCESS_KEY` | Cloudinery3 Secret Key |
-| `Cloudinery_BUCKET_NAME` | Cloudinery Bucket |
+| `AWS_ACCESS_KEY_ID` | AWS access key ID for S3 uploads |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key for S3 uploads |
+| `AWS_S3_BUCKET_NAME` | AWS S3 bucket name for uploaded files |
+| `AWS_REGION` | AWS region for S3 storage |
 | `MAILGUN_API_KEY` | Mailgun API key |
-| `MAILGUN_DOMAIN` | Mailgun Domain |
+| `MAILGUN_DOMAIN` | Mailgun domain |
+| `MAIL_FROM` | Sender email address for outgoing mail |
+| `SMTP_HOST` | SMTP host for fallback email sending |
+| `SMTP_PORT` | SMTP port, typically `587` |
+| `SMTP_SECURE` | `true` for SSL/TLS, `false` for STARTTLS |
+| `SMTP_USER` | SMTP username for fallback email sending |
+| `SMTP_PASS` | SMTP password for fallback email sending |
+| `GMAIL_USER` | Gmail address used for SMTP fallback |
+| `GMAIL_PASS` | Gmail app password for SMTP fallback |
 
 ---
 

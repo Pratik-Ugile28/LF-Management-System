@@ -18,7 +18,9 @@ function Navbar() {
         Authorization: token ? `Bearer ${token}` : "",
       },
     })
-      .then(localStorage.clear())
+      .then(() => {
+        localStorage.clear();
+      })
       .catch((error) => {
         console.log(error);
       });

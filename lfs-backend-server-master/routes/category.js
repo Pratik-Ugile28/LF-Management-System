@@ -1,6 +1,5 @@
 const { postitem } = require("../models/category");
 const messageschema = require("../models/messages");
-require("dotenv").config({path: '../../.env'});
 // const { requestitem } = require("../models/category");
 const { requireSignin, userMiddleware } = require("../middleware");
 const express = require("express");
@@ -11,10 +10,10 @@ var aws = require('aws-sdk')
 var multerS3 = require('multer-s3')
 // const upload=multer({dest:'uploads/'})
 const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '../.env') });
 const log = console.log;
 const SignUp = require("../models/signup");
 const category = require("../models/category");
-const {access_key,secret_access_key} = require("../mongoauth");
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,31 +24,33 @@ var storage = multer.diskStorage({
   },
 });
 
-var upload = multer({ storage });
+const useS3 = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_REGION && process.env.AWS_S3_BUCKET_NAME;
 
-const AWS= new aws.S3({
-  accessKeyId: access_key,
-  secretAccessKey: secret_access_key
-})
-var uploadS3 = multer({
-  storage: multerS3({
-    s3: AWS,
-    bucket: 'pbl-lost-and-found',
-    acl:'public-read',
-    metadata: function (req, file, cb) {
-      cb(null, {fieldName: file.fieldname});
-    },
-    key: function (req, file, cb) {
-      cb(null, shortid.generate() + "-" + file.originalname + "-" + Date.now())
-    }
-  })
-})
+const upload = useS3
+  ? multer({
+      storage: multerS3({
+        s3: new aws.S3({
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          region: process.env.AWS_REGION,
+        }),
+        bucket: process.env.AWS_S3_BUCKET_NAME,
+        acl: "public-read",
+        metadata: function (req, file, cb) {
+          cb(null, { fieldName: file.fieldname });
+        },
+        key: function (req, file, cb) {
+          cb(null, shortid.generate() + "-" + file.originalname + "-" + Date.now());
+        },
+      }),
+    })
+  : multer({ storage });
 
 router.post(
   "/postitem",
   requireSignin,
   userMiddleware,
-  uploadS3.array("itemPictures"),
+  upload.array("itemPictures"),
   async (req, res) => {
     // console.log(req)
     console.log("Hit the POST successfully ");
@@ -62,7 +63,7 @@ router.post(
       var itemPictures = [];
       if (req.files.length > 0) {
         itemPictures = req.files.map((file) => {
-          return { img: file.key };
+          return { img: file.location || file.key || file.filename };
         });
       }
 
@@ -127,7 +128,7 @@ router.post("/edititem", upload.array("itemPictures"), async (req, res) => {
   var itemPictures = [];
   if (req.files.length > 0) {
     itemPictures = req.files.map((file) => {
-      return { img: file.filename };
+      return { img: file.location || file.key || file.filename };
     });
   }
   let item = {

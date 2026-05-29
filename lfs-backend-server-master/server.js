@@ -1,7 +1,6 @@
-const { username, password } = require('./mongoauth');
 var express = require('express')
 const app = express()
-require(`dotenv`).config({ path: '../.env' });
+require('dotenv').config();
 const cors = require('cors')
 // const port = 8000
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -25,17 +24,24 @@ app.use(express.json())
 app.use(passport.initialize())
 app.use(passport.session())
 
-// mongoose.connect(`mongodb+srv://${username}:${password}@cluster0.48bosfo.mongodb.net/`,{
-mongoose.connect(`mongodb+srv://pirateking1803:Harry9021@cluster0.m7aloax.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`, {
+const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/lostfound';
+if (!process.env.MONGODB_URI) {
+  console.warn('Warning: MONGODB_URI is not defined in environment. Falling back to local MongoDB at', mongoUri);
+}
+
+mongoose.connect(mongoUri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
     useCreateIndex: true
 })
-
-mongoose.connection.on('connected', () => {
-    console.log('Database connected !')
+.then(() => {
+    console.log('Database connected!')
 })
+.catch((err) => {
+    console.error('Database connection error:', err);
+    process.exit(1);
+});
 
 app.use('/', routes)
 app.use('/', category)

@@ -28,15 +28,20 @@ function Login() {
     })
       .then((response) => {
         console.log("Response is :", response);
-        if (response.data.user) {
-          //Authentication done.
+        if (response.data.user && response.data.token) {
+          // Authentication done.
           setuser_info(response.data.user);
-          localStorage.setItem("token", response.data.jwt_token);
-          // console.log(response.data.user)
+          localStorage.setItem("token", response.data.token);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
           localStorage.setItem("user", JSON.stringify(response.data.user));
+          setloading(false);
           history.push({ pathname: "/feed", user: response.data.user });
+        } else if (response.data.user) {
+          setinfo("Authentication token missing from response.");
+          setloading(false);
         } else {
           setinfo(response.data);
+          setloading(false);
         }
         // console.log("Response :",response)
       })

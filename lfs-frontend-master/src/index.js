@@ -1,7 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
+import axios from 'axios';
 import "../node_modules/bootstrap/dist/css/bootstrap.css"
+
+const token = window.localStorage.getItem('token');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
 
 ReactDOM.render(
 
