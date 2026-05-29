@@ -1,9 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { promisify } = require("util");
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const mg = require('nodemailer-mailgun-transport');
 const Signup = require('../models/signup');
 const { requireSignin } = require('../middleware');
-require("dotenv").config(`../../.env`); // Ensure this is at the top of the file
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
 const router = express.Router(); // Ensure router is defined here
 
@@ -25,9 +28,11 @@ const sendToken = (user, statuscode, req, res) => {
         httpOnly: NODE_ENV === 'production'
     });
     console.log("Inside send token");
+    const userData = user.toObject ? user.toObject() : { ...user };
+    delete userData.password;
     res.status(statuscode).json({
         token,
-        user
+        user: userData
     });
 };
 
@@ -131,7 +136,8 @@ router.post('/login', checkFieldLogin, async (req, res) => {
             return res.status(404).send("Email does not exist");
         }
 
-        if (user.password === password) {
+        const isPasswordCorrect = await user.comparePassword(password);
+        if (isPasswordCorrect) {
             console.log("Logging in");
             sendToken(user, 200, req, res);
             console.log("Login successful");
@@ -155,11 +161,57 @@ router.post('/feed', requireSignin, (req, res) => res.status(200).json({
     message: "Working fine"
 }));
 
-router.post('/sendmessage', (req, res) => {
-    console.log(req.body);
+router.post('/sendmessage', async (req, res) => {
+    console.log('sendmessage payload:', req.body);
     const { name, email, message } = req.body;
-    // Implement an alternative mail sending solution here
-    res.status(200).json({ success: true });
+
+    if (!email || !message) {
+        return res.status(400).json({ success: false, error: 'Missing email or message' });
+    }
+
+    // Prepare transporter: prefer Mailgun, fallback to SMTP
+    let transporter;
+    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+        const auth = {
+            auth: {
+                api_key: process.env.MAILGUN_API_KEY,
+                domain: process.env.MAILGUN_DOMAIN,
+            }
+        };
+        transporter = nodemailer.createTransport(mg(auth));
+    } else if (process.env.SMTP_HOST && (process.env.SMTP_USER || process.env.GMAIL_USER)) {
+        transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || '587', 10),
+            secure: (process.env.SMTP_SECURE === 'true'),
+            auth: {
+                user: process.env.SMTP_USER || process.env.GMAIL_USER,
+                pass: process.env.SMTP_PASS || process.env.GMAIL_PASS,
+            }
+        });
+    } else {
+        console.error('No mailer configuration found');
+        return res.status(500).json({ success: false, error: 'No mail configuration found' });
+    }
+
+    const from = process.env.MAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER || `no-reply@${process.env.MAILGUN_DOMAIN || 'localhost'}`;
+
+    const mailOptions = {
+        from: `${name || 'FindHUB User'} <${from}>`,
+        to: email,
+        subject: `Message from ${name || 'a user'} via FindHUB`,
+        text: message,
+        html: `<p>${message}</p>`,
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Mail sent:', info);
+        res.status(200).json({ success: true, info });
+    } catch (err) {
+        console.error('Mail send error:', err);
+        res.status(500).json({ success: false, error: 'Failed to send mail', details: err.message });
+    }
 });
 
 module.exports = router;
