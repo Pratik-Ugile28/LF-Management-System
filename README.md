@@ -137,4 +137,4 @@ Got ideas? Found a bug? Contributions are welcome!
 
 ## 💡 Author
 
-Made with ❤️ by Pratik Ugile
+Made with ❤️ by Pratik Ugile (https://github.com/Pratik-Ugile28)
